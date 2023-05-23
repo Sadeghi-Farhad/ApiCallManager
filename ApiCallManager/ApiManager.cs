@@ -10,9 +10,9 @@ using System.Threading.Tasks;
 
 namespace ApiCallManager
 {
-    public class ApiManager
+    public class ApiManager : IApiManager
     {
-        private readonly string ApiHostUrl = "";
+        private readonly string ApiHostUrl;
         private readonly IHttpClientFactory? HttpClientFactory;
 
         public string AccessToken = "";
@@ -20,25 +20,12 @@ namespace ApiCallManager
         private string RefreshUrl = "";
         private bool AutoRefreshTokenIfExpired = false;
 
-        public ApiManager(string apiHostUrl)
-        {
-            ApiHostUrl = apiHostUrl;
-            HttpClientFactory = null;
-        }
-
-        public ApiManager(string apiHostUrl, IHttpClientFactory httpClientFactory)
+        public ApiManager(string apiHostUrl = "", IHttpClientFactory? httpClientFactory = null)
         {
             ApiHostUrl = apiHostUrl;
             HttpClientFactory = httpClientFactory;
         }
 
-        public void SetTokens(string accessToken, string refreshToken, string refreshUrl, bool autoRefreshTokenIfExpired)
-        {
-            AccessToken = accessToken;
-            RefreshToken = refreshToken;
-            RefreshUrl = refreshUrl;
-            AutoRefreshTokenIfExpired = autoRefreshTokenIfExpired;
-        }
 
         private bool TokenIsValid(string token)
         {
@@ -73,16 +60,6 @@ namespace ApiCallManager
         }
 
 
-        /// <summary>
-        /// Send a TRequest object over the Post request to specified address and get TResponse object as response.
-        /// </summary>
-        /// <remarks>
-        /// this function call API and send input parameter as json and recieve json result. then convert recieved json to <typeparamref name="TResponse"/> output.
-        /// </remarks>
-        /// <param name="address">API address. for example: "/pb/SearchPbPersonnels"</param>
-        /// <param name="input">API input parameter. this parameter converted to json and sended to API.</param>
-        /// <param name="accesstoken">Access token. this parameter send in Authorization Header to API.</param>
-        /// <returns>API response object in <typeparamref name="TResponse"/> type.</returns>
         public async Task<ApiResult<TResponse>> PostAsync<TRequest, TResponse>(string address, TRequest input, bool sendAccessToken = false, string accesstoken = "")
         {
             ApiResult<TResponse> res = new ApiResult<TResponse>()
@@ -178,17 +155,6 @@ namespace ApiCallManager
             return res;
         }
 
-
-        /// <summary>
-        /// Send a TRequest object over the Post request to specified address.
-        /// </summary>
-        /// <remarks>
-        /// this function call API and send input parameter as json and recieve json result.
-        /// </remarks>
-        /// <param name="address">API address. for example: "/pb/SearchPbPersonnels"</param>
-        /// <param name="input">API input parameter. this parameter converted to json and sended to API.</param>
-        /// <param name="accesstoken">Access token. this parameter send in Authorization Header to API.</param>
-        /// <returns>Call status object.</returns>
         public async Task<ApiResult> PostNoResultAsync<TRequest>(string address, TRequest input, bool sendAccessToken = false, string accesstoken = "")
         {
             ApiResult res = new ApiResult()
@@ -269,17 +235,6 @@ namespace ApiCallManager
             return res;
         }
 
-
-        /// <summary>
-        /// Send a Get request to specified address and get TResponse object as response.
-        /// </summary>
-        /// <remarks>
-        /// this function call API with specified parameters and recieve json result. then convert recieved json to <typeparamref name="TResponse"/> output.
-        /// </remarks>
-        /// <param name="address">API address. for example: "/pb/SearchPbPersonnels"</param>
-        /// <param name="accesstoken">Access token. this parameter send in Authorization Header to API.</param>
-        /// <param name="param">name and value of parameter</param>
-        /// <returns>API response object in <typeparamref name="TResponse"/> type.</returns>
         public async Task<ApiResult<TResponse>> GetAsync<TResponse>(string address, bool sendAccessToken = false, string accesstoken = "", params Tuple<string, string>[] param)
         {
             ApiResult<TResponse> res = new ApiResult<TResponse>()
@@ -375,6 +330,14 @@ namespace ApiCallManager
             }
 
             return res;
+        }
+
+        public void SetTokens(string accessToken, string refreshToken, string refreshUrl, bool autoRefreshTokenIfExpired)
+        {
+            AccessToken = accessToken;
+            RefreshToken = refreshToken;
+            RefreshUrl = refreshUrl;
+            AutoRefreshTokenIfExpired = autoRefreshTokenIfExpired;
         }
 
         public async Task<bool> RefreshTokens()

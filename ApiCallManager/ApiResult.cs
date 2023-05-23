@@ -3,7 +3,6 @@ using Newtonsoft.Json;
 
 namespace ApiCallManager
 {
-
     public class ApiResult
     {
         public bool IsSuccess { get; set; }

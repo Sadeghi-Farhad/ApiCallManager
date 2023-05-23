@@ -1,6 +1,5 @@
 using ApiCallManager;
 using Microsoft.AspNetCore.Mvc;
-using System.Net;
 
 namespace WebServiceTester.Controllers
 {
@@ -26,21 +25,14 @@ namespace WebServiceTester.Controllers
             {
                 return Ok(result.Result);
             }
-            else if (result.Problem != null)
-            {
-                return Problem(
-                        type: result.Problem.Type,
-                        statusCode: result.Problem.Status,
-                        title: result.Problem.Title,
-                        detail: result.Problem.Detail
-                    );
-            }
             else
             {
                 return Problem(
-                    type: ErrorTypes.server_unexpected_error,
-                    statusCode: (int)HttpStatusCode.InternalServerError
-                );
+                        type: result?.Problem?.Type,
+                        statusCode: result?.Problem?.Status,
+                        title: result?.Problem?.Title,
+                        detail: result?.Problem?.Detail
+                    );
             }
         }
     }

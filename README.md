@@ -8,7 +8,7 @@ in asp.net core web api project you should add ApiManager in Service Container:
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<ApiCallManager.IApiManager, ApiCallManager.ApiManager>();
 ```
-<sub>Note that if you dont want to use HttpClientFactory, you can remove `builder.Services.AddHttpClient();`</sub>
+<sub> Note that if you dont want to use HttpClientFactory, you can remove `builder.Services.AddHttpClient();` </sub>
 
 Then Inject ApiManager service where you want and use it.
 In below example code ApiManager service injected into TestController:

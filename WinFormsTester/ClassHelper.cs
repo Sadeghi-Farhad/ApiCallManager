@@ -11,11 +11,11 @@ namespace WinFormsTester
         {
             if (error != null)
             {
-                MessageBox.Show($"Title: {error?.Title ?? "-"}\n\rDetails: {error?.Detail ?? "-"}", "خطای فراخوانی وب سرویس", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Title: {error?.Title ?? "-"}\n\rDetails: {error?.Detail ?? "-"}", "API Call Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             else
             {
-                MessageBox.Show($"خطای نامعلومی رخ داده است", "خطای فراخوانی وب سرویس", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"An unknown error has occurred!", "API Call Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }

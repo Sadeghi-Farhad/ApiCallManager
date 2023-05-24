@@ -49,7 +49,7 @@ public class TestController : ControllerBase
 }
 ```
 
-## ** How to use ApiManager in Console or Windows Application Projects **
+## How to use ApiManager in Console or Windows Application Projects
 in console applications or windows applications you can create a static instance of ApiManager inside a Helper class or in program global scope.
 
 ```

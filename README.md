@@ -112,4 +112,19 @@ public async Task<List<User>?> GetUsersAsync()
 }
 ```
 
+## Send MultiPart form-data
+```
+int a = 25;
+string b = "Text string";
+
+MultipartFormDataContent content = new MultipartFormDataContent();
+content.Add(new StringContent("IntParam"), a.ToString());
+content.Add(new StringContent("StringParam"), b);
+
+FileStream fs = new FileStream("C://TestFolder/myfile.png", FileMode.Open);
+content.Add(new StreamContent(fs), "FileParam", "myfile.png");
+
+var resutl = await ClassHelper.apiManager.PutAsync<MultipartFormDataContent, string>("https://myserver/testapi", content);
+```
+
 

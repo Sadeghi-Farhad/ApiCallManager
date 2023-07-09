@@ -112,7 +112,7 @@ public async Task<List<User>?> GetUsersAsync()
 }
 ```
 
-## Send MultiPart form-data
+## How to Send MultiPart form-data
 ```
 int a = 25;
 string b = "Text string";

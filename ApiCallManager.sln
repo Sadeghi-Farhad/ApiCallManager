@@ -3,11 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.4.33205.214
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ApiCallManager", "ApiCallManager\ApiCallManager.csproj", "{CE20D358-0A7F-4D89-AD32-88209E08A2B4}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WinFormsTester", "WinFormsTester\WinFormsTester.csproj", "{370BBC50-79DC-4B68-9F24-2E976918A31E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebServiceTester", "WebServiceTester\WebServiceTester.csproj", "{8FB709E9-170D-4F0E-A5A0-FCCC568B5FE5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebServiceTester", "WebServiceTester\WebServiceTester.csproj", "{8FB709E9-170D-4F0E-A5A0-FCCC568B5FE5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ApiCallManager.NetFramework", "ApiCallManager.NetFramework\ApiCallManager.NetFramework.csproj", "{DCA85F2C-6471-410B-A706-D72B47B90B1C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ApiCallManager", "ApiCallManager.NetCore\ApiCallManager.csproj", "{B8F6CC44-8A7B-43A7-A286-E98715131645}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,10 +17,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{CE20D358-0A7F-4D89-AD32-88209E08A2B4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{CE20D358-0A7F-4D89-AD32-88209E08A2B4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{CE20D358-0A7F-4D89-AD32-88209E08A2B4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{CE20D358-0A7F-4D89-AD32-88209E08A2B4}.Release|Any CPU.Build.0 = Release|Any CPU
 		{370BBC50-79DC-4B68-9F24-2E976918A31E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{370BBC50-79DC-4B68-9F24-2E976918A31E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{370BBC50-79DC-4B68-9F24-2E976918A31E}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -27,6 +25,14 @@ Global
 		{8FB709E9-170D-4F0E-A5A0-FCCC568B5FE5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8FB709E9-170D-4F0E-A5A0-FCCC568B5FE5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8FB709E9-170D-4F0E-A5A0-FCCC568B5FE5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DCA85F2C-6471-410B-A706-D72B47B90B1C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DCA85F2C-6471-410B-A706-D72B47B90B1C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DCA85F2C-6471-410B-A706-D72B47B90B1C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DCA85F2C-6471-410B-A706-D72B47B90B1C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B8F6CC44-8A7B-43A7-A286-E98715131645}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B8F6CC44-8A7B-43A7-A286-E98715131645}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B8F6CC44-8A7B-43A7-A286-E98715131645}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B8F6CC44-8A7B-43A7-A286-E98715131645}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

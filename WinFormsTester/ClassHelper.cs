@@ -7,7 +7,7 @@ namespace WinFormsTester
     {
         public static IApiManager apiManager;
 
-        public static void ShowApiCallError(ValidationProblemDetails? error)
+        public static void ShowApiCallError(ApiCallManager.ValidationProblemDetails? error)
         {
             if (error != null)
             {

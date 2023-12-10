@@ -1,4 +1,5 @@
 using ApiCallManager;
+using Microsoft.AspNetCore.Mvc;
 
 namespace WinFormsTester
 {
@@ -53,6 +54,7 @@ namespace WinFormsTester
             }
         }
 
+
         public async Task<AuthResultDTO?> LoginAsync(string username, string password)
         {
             var result = await ClassHelper.apiManager.PostAsync<KeyValuePair<string, string>, AuthResultDTO>("https://gorest.co.in/public/v2/login", new KeyValuePair<string, string>(username, password));
@@ -85,6 +87,16 @@ namespace WinFormsTester
 
         public async Task<List<User>?> GetUsersAsync()
         {
+            Sheet sh = new Sheet();
+            sh.HeaderData = new string[] { "a", "b", "c" };
+            sh.RowsData = new List<string[]>();
+            sh.RowsData.Add(new string[] { "1", "2", "3" });
+
+            var x = await ClassHelper.apiManager.PostAsync<Sheet, FileContentResult>("https://gateway.crouseco.com/crapp/excel/DownloadExcelFile", sh);
+
+            
+
+
             var result = await ClassHelper.apiManager.GetAsync<List<User>>("https://gorest.co.in/public/v2/users");
 
             if (result.IsSuccess)
@@ -97,5 +109,38 @@ namespace WinFormsTester
                 return null;
             }
         }
+
+        private void btn_SelectMultiPartFile_Click(object sender, EventArgs e)
+        {
+            var fileResult = openFileDialog1.ShowDialog();
+            txtBox_MultiPartFile.Text = openFileDialog1.FileName;
+        }
+
+        private void btn_PostMultiPart_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private async Task PostMultiPartContent()
+        {
+            int a = 25;
+            string b = "Text string";
+
+            MultipartFormDataContent content = new MultipartFormDataContent();
+            content.Add(new StringContent("IntParam"), a.ToString());
+            content.Add(new StringContent("StringParam"), b);
+
+            FileStream fs = new FileStream("C://TestFolder/myfile.png", FileMode.Open);
+            content.Add(new StreamContent(fs), "FileParam", "myfile.png");
+
+            var resutl = await ClassHelper.apiManager.PutAsync<MultipartFormDataContent, string>("https://myserver/testapi", content);
+        }
+
+    }
+
+    public class Sheet
+    {
+        public string[] HeaderData { get; set; }
+        public List<string[]> RowsData { get; set; }
     }
 }

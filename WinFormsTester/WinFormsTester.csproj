@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ApiCallManager\ApiCallManager.csproj" />
+    <ProjectReference Include="..\ApiCallManager.NetCore\ApiCallManager.csproj" />
   </ItemGroup>
 
 </Project>

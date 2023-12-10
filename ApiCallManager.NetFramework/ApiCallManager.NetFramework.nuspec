@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package >
+  <metadata>
+    <id>$id$</id>
+    <version>$version$</version>
+    <title>$title$</title>
+    <authors>Sadeghi-Farhad</authors>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <license type="expression">MIT</license>
+    <!-- <icon>icon.png</icon> -->
+    <projectUrl>https://www.nuget.org/packages/ApiCallManager</projectUrl>
+    <description>$description$</description>
+    <releaseNotes>Dot Net 4.8 supported.</releaseNotes>
+    <copyright>$copyright$</copyright>
+    <tags>ApiCall; CallApi; ApiManager; ApiCallManager; ApiCallManager.NetFramework;</tags>
+  </metadata>
+</package>

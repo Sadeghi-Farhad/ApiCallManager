@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ApiCallManager.NetFramework
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ApiCallManager", "ApiCallManager.NetCore\ApiCallManager.csproj", "{B8F6CC44-8A7B-43A7-A286-E98715131645}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WinFormsFrameworkTester", "WinFormsFrameworkTester\WinFormsFrameworkTester.csproj", "{AAEA7035-522D-49E6-BAB3-3E9A86044B98}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{B8F6CC44-8A7B-43A7-A286-E98715131645}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B8F6CC44-8A7B-43A7-A286-E98715131645}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B8F6CC44-8A7B-43A7-A286-E98715131645}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AAEA7035-522D-49E6-BAB3-3E9A86044B98}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AAEA7035-522D-49E6-BAB3-3E9A86044B98}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AAEA7035-522D-49E6-BAB3-3E9A86044B98}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AAEA7035-522D-49E6-BAB3-3E9A86044B98}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

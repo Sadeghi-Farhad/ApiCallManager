@@ -13,14 +13,26 @@ namespace ApiCallManager.NetFramework
     public class ApiManager : IApiManager
     {
         private readonly string ApiHostUrl;
+        private readonly SecurityProtocolType SecurityProtocolType;
 
         public string AccessToken = "";
         private string RefreshToken = "";
         private string RefreshUrl = "";
         private bool AutoRefreshTokenIfExpired = false;
-        private SecurityProtocolType SecurityProtocolType = SecurityProtocolType.Tls12;
 
-        public ApiManager(string apiHostUrl = "", SecurityProtocolType securityProtocolType = SecurityProtocolType.Tls12)
+        public ApiManager()
+        {
+            ApiHostUrl = "";
+            SecurityProtocolType = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls13;
+        }
+
+        public ApiManager(string apiHostUrl)
+        {
+            ApiHostUrl = apiHostUrl;
+            SecurityProtocolType = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls13;
+        }
+
+        public ApiManager(string apiHostUrl, SecurityProtocolType securityProtocolType)
         {
             ApiHostUrl = apiHostUrl;
             SecurityProtocolType = securityProtocolType;

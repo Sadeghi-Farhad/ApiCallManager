@@ -1,7 +1,7 @@
 ﻿namespace ApiCallManager
 {
     /// <summary>
-    /// A <see cref="ProblemDetails"/> for validation errors.
+    /// A ProblemDetails for validation errors.
     /// </summary>
     public class ValidationProblemDetails
     {

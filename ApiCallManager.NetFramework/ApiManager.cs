@@ -13,17 +13,17 @@ namespace ApiCallManager.NetFramework
     public class ApiManager : IApiManager
     {
         private readonly string ApiHostUrl;
-        private readonly IHttpClientFactory HttpClientFactory;
 
         public string AccessToken = "";
         private string RefreshToken = "";
         private string RefreshUrl = "";
         private bool AutoRefreshTokenIfExpired = false;
+        private SecurityProtocolType SecurityProtocolType = SecurityProtocolType.Tls12;
 
-        public ApiManager(string apiHostUrl = "", IHttpClientFactory httpClientFactory = null)
+        public ApiManager(string apiHostUrl = "", SecurityProtocolType securityProtocolType = SecurityProtocolType.Tls12)
         {
             ApiHostUrl = apiHostUrl;
-            HttpClientFactory = httpClientFactory;
+            SecurityProtocolType = securityProtocolType;
         }
 
 
@@ -55,8 +55,14 @@ namespace ApiCallManager.NetFramework
 
         private HttpClient CreateHttpClient()
         {
-            if (HttpClientFactory == null) return new HttpClient();
-            else return HttpClientFactory.CreateClient();
+            HttpClient client = new HttpClient();
+
+            ServicePointManager.SecurityProtocol = SecurityProtocolType;
+            client.DefaultRequestHeaders.Add("Connection", "Keep-Alive");
+            client.DefaultRequestHeaders.Add("Keep-Alive", "3600");
+            client.DefaultRequestHeaders.ConnectionClose = true;
+
+            return client;
         }
 
 

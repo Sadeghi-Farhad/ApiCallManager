@@ -20,19 +20,7 @@ namespace ApiCallManager.NetFramework
         private string RefreshUrl = "";
         private bool AutoRefreshTokenIfExpired = false;
 
-        public ApiManager()
-        {
-            ApiHostUrl = "";
-            SecurityProtocolType = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls13;
-        }
-
-        public ApiManager(string apiHostUrl)
-        {
-            ApiHostUrl = apiHostUrl;
-            SecurityProtocolType = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls13;
-        }
-
-        public ApiManager(string apiHostUrl, SecurityProtocolType securityProtocolType)
+        public ApiManager(string apiHostUrl = "", SecurityProtocolType securityProtocolType = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls13)
         {
             ApiHostUrl = apiHostUrl;
             SecurityProtocolType = securityProtocolType;
@@ -80,12 +68,6 @@ namespace ApiCallManager.NetFramework
 
         public async Task<ApiResult<TResponse>> GetAsync<TResponse>(string address, bool sendAccessToken = false, string accesstoken = "", params Tuple<string, string>[] param)
         {
-            ApiResult<TResponse> res = new ApiResult<TResponse>()
-            {
-                IsSuccess = false,
-                Problem = null
-            };
-
             try
             {
                 using (var httpClient = CreateHttpClient())
@@ -96,39 +78,9 @@ namespace ApiCallManager.NetFramework
                     if (param.Length > 0) s = "?" + string.Join("&", param.Select(x => x.Item1 + "=" + x.Item2));
 
                     var response = await httpClient.GetAsync(ApiHostUrl + address + s);
+                    ApiResult<TResponse> res = await CheckResponse<TResponse>(response);
 
-                    if (response.IsSuccessStatusCode)
-                    {
-                        string responseContent = await response.Content.ReadAsStringAsync();
-
-                        if (typeof(TResponse) != typeof(string))
-                        {
-                            var result = JsonConvert.DeserializeObject<TResponse>(responseContent);
-
-                            res.IsSuccess = true;
-                            res.Result = result;
-                        }
-                        else
-                        {
-                            object result = responseContent;
-
-                            res.IsSuccess = true;
-                            res.Result = (TResponse)result;
-                        }
-                    }
-                    else if (response.StatusCode == HttpStatusCode.BadGateway)
-                    {
-                        res.IsSuccess = false;
-                        res.Problem = new ValidationProblemDetails()
-                        {
-                            Type = ErrorTypes.connection_error,
-                            Status = (int)HttpStatusCode.BadGateway,
-                            Title = $"API Connection Error({address})",
-                            Detail = string.Empty,
-                            Instance = System.Reflection.MethodBase.GetCurrentMethod().ReflectedType.Name
-                        };
-                    }
-                    else if (sendAccessToken && accesstoken == "" && AccessToken != "" && AutoRefreshTokenIfExpired && (response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden || response.StatusCode == HttpStatusCode.MethodNotAllowed))
+                    if (res.IsSuccess == false && res?.Problem?.Type == ErrorTypes.unauthorized && sendAccessToken && accesstoken == "" && AccessToken != "" && AutoRefreshTokenIfExpired)
                     {
                         bool refreshSuccess = await RefreshTokens();
 
@@ -136,53 +88,30 @@ namespace ApiCallManager.NetFramework
                     }
                     else
                     {
-                        string responseContent = await response.Content.ReadAsStringAsync();
-                        var data = JsonConvert.DeserializeObject<ValidationProblemDetails>(responseContent);
-
-                        if (data != null)
-                        {
-                            res.IsSuccess = false;
-                            res.Problem = data;
-                        }
-                        else
-                        {
-                            res.IsSuccess = false;
-                            res.Problem = new ValidationProblemDetails()
-                            {
-                                Type = ErrorTypes.server_error,
-                                Status = (int)response.StatusCode,
-                                Title = $"API Error({address})",
-                                Detail = string.Empty,
-                                Instance = System.Reflection.MethodBase.GetCurrentMethod().ReflectedType.Name
-                            };
-                        }
+                        return res;
                     }
                 }
             }
             catch (Exception ex)
             {
-                res.IsSuccess = false;
-                res.Problem = new ValidationProblemDetails()
+                return new ApiResult<TResponse>()
                 {
-                    Type = ErrorTypes.server_unexpected_error,
-                    Status = (int)HttpStatusCode.InternalServerError,
-                    Title = $"API Manager Error({address})",
-                    Detail = ex.Message,
-                    Instance = System.Reflection.MethodBase.GetCurrentMethod().ReflectedType.Name
+                    IsSuccess = false,
+                    Problem = new ValidationProblemDetails()
+                    {
+                        Type = ErrorTypes.server_unexpected_error,
+                        Status = (int)HttpStatusCode.InternalServerError,
+                        Title = $"API Manager Error({address})",
+                        Detail = ex.Message,
+                        Instance = "ApiManager/GetAsync"
+                    }
                 };
             }
-
-            return res;
         }
+
 
         public async Task<ApiResult<TResponse>> PostAsync<TRequest, TResponse>(string address, TRequest input, bool sendAccessToken = false, string accesstoken = "")
         {
-            ApiResult<TResponse> res = new ApiResult<TResponse>()
-            {
-                IsSuccess = false,
-                Problem = null
-            };
-
             try
             {
                 using (var httpClient = CreateHttpClient())
@@ -201,47 +130,9 @@ namespace ApiCallManager.NetFramework
                         response = await httpClient.PostAsync(ApiHostUrl + address, content);
                     }
 
-                    if (response.IsSuccessStatusCode)
-                    {
-                        if (typeof(TResponse) == typeof(FileContentResult))
-                        {
-                            byte[] tmp = await response.Content.ReadAsByteArrayAsync();
+                    ApiResult<TResponse> res = await CheckResponse<TResponse>(response);
 
-                            object result = new FileContentResult(tmp, response.Content.Headers.ContentType.MediaType);
-
-                            res.IsSuccess = true;
-                            res.Result = (TResponse)result;
-                        }
-                        else if (typeof(TResponse) != typeof(string))
-                        {
-                            string responseContent = await response.Content.ReadAsStringAsync();
-                            var result = JsonConvert.DeserializeObject<TResponse>(responseContent);
-
-                            res.IsSuccess = true;
-                            res.Result = result;
-                        }
-                        else
-                        {
-                            string responseContent = await response.Content.ReadAsStringAsync();
-                            object result = responseContent;
-
-                            res.IsSuccess = true;
-                            res.Result = (TResponse)result;
-                        }
-                    }
-                    else if (response.StatusCode == HttpStatusCode.BadGateway)
-                    {
-                        res.IsSuccess = false;
-                        res.Problem = new ValidationProblemDetails()
-                        {
-                            Type = ErrorTypes.connection_error,
-                            Status = (int)HttpStatusCode.BadGateway,
-                            Title = $"API Connection Error({address})",
-                            Detail = string.Empty,
-                            Instance = System.Reflection.MethodBase.GetCurrentMethod().ReflectedType.Name
-                        };
-                    }
-                    else if (sendAccessToken && accesstoken == "" && AccessToken != "" && AutoRefreshTokenIfExpired && (response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden || response.StatusCode == HttpStatusCode.MethodNotAllowed))
+                    if (res.IsSuccess == false && res?.Problem?.Type == ErrorTypes.unauthorized && sendAccessToken && accesstoken == "" && AccessToken != "" && AutoRefreshTokenIfExpired)
                     {
                         bool refreshSuccess = await RefreshTokens();
 
@@ -249,53 +140,29 @@ namespace ApiCallManager.NetFramework
                     }
                     else
                     {
-                        string responseContent = await response.Content.ReadAsStringAsync();
-                        var data = JsonConvert.DeserializeObject<ValidationProblemDetails>(responseContent);
-
-                        if (data != null)
-                        {
-                            res.IsSuccess = false;
-                            res.Problem = data;
-                        }
-                        else
-                        {
-                            res.IsSuccess = false;
-                            res.Problem = new ValidationProblemDetails()
-                            {
-                                Type = ErrorTypes.server_error,
-                                Status = (int)response.StatusCode,
-                                Title = $"API Error({address})",
-                                Detail = string.Empty,
-                                Instance = System.Reflection.MethodBase.GetCurrentMethod().ReflectedType.Name
-                            };
-                        }
+                        return res;
                     }
                 }
             }
             catch (Exception ex)
             {
-                res.IsSuccess = false;
-                res.Problem = new ValidationProblemDetails()
+                return new ApiResult<TResponse>()
                 {
-                    Type = ErrorTypes.server_unexpected_error,
-                    Status = (int)HttpStatusCode.InternalServerError,
-                    Title = $"API Manager Error({address})",
-                    Detail = ex.Message,
-                    Instance = System.Reflection.MethodBase.GetCurrentMethod().ReflectedType.Name
+                    IsSuccess = false,
+                    Problem = new ValidationProblemDetails()
+                    {
+                        Type = ErrorTypes.server_unexpected_error,
+                        Status = (int)HttpStatusCode.InternalServerError,
+                        Title = $"API Manager Error({address})",
+                        Detail = ex.Message,
+                        Instance = "ApiManager/PostAsync"
+                    }
                 };
             }
-
-            return res;
         }
 
         public async Task<ApiResult> PostNoResultAsync<TRequest>(string address, TRequest input, bool sendAccessToken = false, string accesstoken = "")
         {
-            ApiResult res = new ApiResult()
-            {
-                IsSuccess = false,
-                Problem = null
-            };
-
             try
             {
                 using (var httpClient = CreateHttpClient())
@@ -314,23 +181,9 @@ namespace ApiCallManager.NetFramework
                         response = await httpClient.PostAsync(ApiHostUrl + address, content);
                     }
 
-                    if (response.IsSuccessStatusCode)
-                    {
-                        res.IsSuccess = true;
-                    }
-                    else if (response.StatusCode == HttpStatusCode.BadGateway)
-                    {
-                        res.IsSuccess = false;
-                        res.Problem = new ValidationProblemDetails()
-                        {
-                            Type = ErrorTypes.connection_error,
-                            Status = (int)HttpStatusCode.BadGateway,
-                            Title = $"API Connection Error({address})",
-                            Detail = string.Empty,
-                            Instance = System.Reflection.MethodBase.GetCurrentMethod().ReflectedType.Name
-                        };
-                    }
-                    else if (sendAccessToken && accesstoken == "" && AccessToken != "" && AutoRefreshTokenIfExpired && (response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden || response.StatusCode == HttpStatusCode.MethodNotAllowed))
+                    ApiResult res = await CheckResponse(response);
+
+                    if (res.IsSuccess == false && res?.Problem?.Type == ErrorTypes.unauthorized && sendAccessToken && accesstoken == "" && AccessToken != "" && AutoRefreshTokenIfExpired)
                     {
                         bool refreshSuccess = await RefreshTokens();
 
@@ -338,53 +191,30 @@ namespace ApiCallManager.NetFramework
                     }
                     else
                     {
-                        string responseContent = await response.Content.ReadAsStringAsync();
-                        var data = JsonConvert.DeserializeObject<ValidationProblemDetails>(responseContent);
-
-                        if (data != null)
-                        {
-                            res.IsSuccess = false;
-                            res.Problem = data;
-                        }
-                        else
-                        {
-                            res.IsSuccess = false;
-                            res.Problem = new ValidationProblemDetails()
-                            {
-                                Type = ErrorTypes.server_error,
-                                Status = (int)response.StatusCode,
-                                Title = $"API Error({address})",
-                                Detail = string.Empty,
-                                Instance = System.Reflection.MethodBase.GetCurrentMethod().ReflectedType.Name
-                            };
-                        }
+                        return res;
                     }
                 }
             }
             catch (Exception ex)
             {
-                res.IsSuccess = false;
-                res.Problem = new ValidationProblemDetails()
+                return new ApiResult()
                 {
-                    Type = ErrorTypes.server_unexpected_error,
-                    Status = (int)HttpStatusCode.InternalServerError,
-                    Title = $"API Manager Error({address})",
-                    Detail = ex.Message,
-                    Instance = System.Reflection.MethodBase.GetCurrentMethod().ReflectedType.Name
+                    IsSuccess = false,
+                    Problem = new ValidationProblemDetails()
+                    {
+                        Type = ErrorTypes.server_unexpected_error,
+                        Status = (int)HttpStatusCode.InternalServerError,
+                        Title = $"API Manager Error({address})",
+                        Detail = ex.Message,
+                        Instance = "ApiManager/PostNoResultAsync"
+                    }
                 };
             }
-
-            return res;
         }
+
 
         public async Task<ApiResult<TResponse>> PutAsync<TRequest, TResponse>(string address, TRequest input, bool sendAccessToken = false, string accesstoken = "")
         {
-            ApiResult<TResponse> res = new ApiResult<TResponse>()
-            {
-                IsSuccess = false,
-                Problem = null
-            };
-
             try
             {
                 using (var httpClient = CreateHttpClient())
@@ -403,47 +233,9 @@ namespace ApiCallManager.NetFramework
                         response = await httpClient.PutAsync(ApiHostUrl + address, content);
                     }
 
-                    if (response.IsSuccessStatusCode)
-                    {
-                        if (typeof(TResponse) == typeof(FileContentResult))
-                        {
-                            byte[] tmp = await response.Content.ReadAsByteArrayAsync();
+                    ApiResult<TResponse> res = await CheckResponse<TResponse>(response);
 
-                            object result = new FileContentResult(tmp, response.Content.Headers.ContentType.MediaType);
-
-                            res.IsSuccess = true;
-                            res.Result = (TResponse)result;
-                        }
-                        else if (typeof(TResponse) != typeof(string))
-                        {
-                            string responseContent = await response.Content.ReadAsStringAsync();
-                            var result = JsonConvert.DeserializeObject<TResponse>(responseContent);
-
-                            res.IsSuccess = true;
-                            res.Result = result;
-                        }
-                        else
-                        {
-                            string responseContent = await response.Content.ReadAsStringAsync();
-                            object result = responseContent;
-
-                            res.IsSuccess = true;
-                            res.Result = (TResponse)result;
-                        }
-                    }
-                    else if (response.StatusCode == HttpStatusCode.BadGateway)
-                    {
-                        res.IsSuccess = false;
-                        res.Problem = new ValidationProblemDetails()
-                        {
-                            Type = ErrorTypes.connection_error,
-                            Status = (int)HttpStatusCode.BadGateway,
-                            Title = $"API Connection Error({address})",
-                            Detail = string.Empty,
-                            Instance = System.Reflection.MethodBase.GetCurrentMethod().ReflectedType.Name
-                        };
-                    }
-                    else if (sendAccessToken && accesstoken == "" && AccessToken != "" && AutoRefreshTokenIfExpired && (response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden || response.StatusCode == HttpStatusCode.MethodNotAllowed))
+                    if (res.IsSuccess == false && res?.Problem?.Type == ErrorTypes.unauthorized && sendAccessToken && accesstoken == "" && AccessToken != "" && AutoRefreshTokenIfExpired)
                     {
                         bool refreshSuccess = await RefreshTokens();
 
@@ -451,53 +243,29 @@ namespace ApiCallManager.NetFramework
                     }
                     else
                     {
-                        string responseContent = await response.Content.ReadAsStringAsync();
-                        var data = JsonConvert.DeserializeObject<ValidationProblemDetails>(responseContent);
-
-                        if (data != null)
-                        {
-                            res.IsSuccess = false;
-                            res.Problem = data;
-                        }
-                        else
-                        {
-                            res.IsSuccess = false;
-                            res.Problem = new ValidationProblemDetails()
-                            {
-                                Type = ErrorTypes.server_error,
-                                Status = (int)response.StatusCode,
-                                Title = $"API Error({address})",
-                                Detail = string.Empty,
-                                Instance = System.Reflection.MethodBase.GetCurrentMethod().ReflectedType.Name
-                            };
-                        }
+                        return res;
                     }
                 }
             }
             catch (Exception ex)
             {
-                res.IsSuccess = false;
-                res.Problem = new ValidationProblemDetails()
+                return new ApiResult<TResponse>()
                 {
-                    Type = ErrorTypes.server_unexpected_error,
-                    Status = (int)HttpStatusCode.InternalServerError,
-                    Title = $"API Manager Error({address})",
-                    Detail = ex.Message,
-                    Instance = System.Reflection.MethodBase.GetCurrentMethod().ReflectedType.Name
+                    IsSuccess = false,
+                    Problem = new ValidationProblemDetails()
+                    {
+                        Type = ErrorTypes.server_unexpected_error,
+                        Status = (int)HttpStatusCode.InternalServerError,
+                        Title = $"API Manager Error({address})",
+                        Detail = ex.Message,
+                        Instance = "ApiManager/PutAsync"
+                    }
                 };
             }
-
-            return res;
         }
 
         public async Task<ApiResult> PutNoResultAsync<TRequest>(string address, TRequest input, bool sendAccessToken = false, string accesstoken = "")
         {
-            ApiResult res = new ApiResult()
-            {
-                IsSuccess = false,
-                Problem = null
-            };
-
             try
             {
                 using (var httpClient = CreateHttpClient())
@@ -516,23 +284,9 @@ namespace ApiCallManager.NetFramework
                         response = await httpClient.PutAsync(ApiHostUrl + address, content);
                     }
 
-                    if (response.IsSuccessStatusCode)
-                    {
-                        res.IsSuccess = true;
-                    }
-                    else if (response.StatusCode == HttpStatusCode.BadGateway)
-                    {
-                        res.IsSuccess = false;
-                        res.Problem = new ValidationProblemDetails()
-                        {
-                            Type = ErrorTypes.connection_error,
-                            Status = (int)HttpStatusCode.BadGateway,
-                            Title = $"API Connection Error({address})",
-                            Detail = string.Empty,
-                            Instance = System.Reflection.MethodBase.GetCurrentMethod().ReflectedType.Name
-                        };
-                    }
-                    else if (sendAccessToken && accesstoken == "" && AccessToken != "" && AutoRefreshTokenIfExpired && (response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden || response.StatusCode == HttpStatusCode.MethodNotAllowed))
+                    ApiResult res = await CheckResponse(response);
+
+                    if (res.IsSuccess == false && res?.Problem?.Type == ErrorTypes.unauthorized && sendAccessToken && accesstoken == "" && AccessToken != "" && AutoRefreshTokenIfExpired)
                     {
                         bool refreshSuccess = await RefreshTokens();
 
@@ -540,53 +294,30 @@ namespace ApiCallManager.NetFramework
                     }
                     else
                     {
-                        string responseContent = await response.Content.ReadAsStringAsync();
-                        var data = JsonConvert.DeserializeObject<ValidationProblemDetails>(responseContent);
-
-                        if (data != null)
-                        {
-                            res.IsSuccess = false;
-                            res.Problem = data;
-                        }
-                        else
-                        {
-                            res.IsSuccess = false;
-                            res.Problem = new ValidationProblemDetails()
-                            {
-                                Type = ErrorTypes.server_error,
-                                Status = (int)response.StatusCode,
-                                Title = $"API Error({address})",
-                                Detail = string.Empty,
-                                Instance = System.Reflection.MethodBase.GetCurrentMethod().ReflectedType.Name
-                            };
-                        }
+                        return res;
                     }
                 }
             }
             catch (Exception ex)
             {
-                res.IsSuccess = false;
-                res.Problem = new ValidationProblemDetails()
+                return new ApiResult()
                 {
-                    Type = ErrorTypes.server_unexpected_error,
-                    Status = (int)HttpStatusCode.InternalServerError,
-                    Title = $"API Manager Error({address})",
-                    Detail = ex.Message,
-                    Instance = System.Reflection.MethodBase.GetCurrentMethod().ReflectedType.Name
+                    IsSuccess = false,
+                    Problem = new ValidationProblemDetails()
+                    {
+                        Type = ErrorTypes.server_unexpected_error,
+                        Status = (int)HttpStatusCode.InternalServerError,
+                        Title = $"API Manager Error({address})",
+                        Detail = ex.Message,
+                        Instance = "ApiManager/PutNoResultAsync"
+                    }
                 };
             }
-
-            return res;
         }
+
 
         public async Task<ApiResult<TResponse>> DeleteAsync<TResponse>(string address, bool sendAccessToken = false, string accesstoken = "", params Tuple<string, string>[] param)
         {
-            ApiResult<TResponse> res = new ApiResult<TResponse>()
-            {
-                IsSuccess = false,
-                Problem = null
-            };
-
             try
             {
                 using (var httpClient = CreateHttpClient())
@@ -598,38 +329,9 @@ namespace ApiCallManager.NetFramework
 
                     var response = await httpClient.DeleteAsync(ApiHostUrl + address + s);
 
-                    if (response.IsSuccessStatusCode)
-                    {
-                        string responseContent = await response.Content.ReadAsStringAsync();
+                    ApiResult<TResponse> res = await CheckResponse<TResponse>(response);
 
-                        if (typeof(TResponse) != typeof(string))
-                        {
-                            var result = JsonConvert.DeserializeObject<TResponse>(responseContent);
-
-                            res.IsSuccess = true;
-                            res.Result = result;
-                        }
-                        else
-                        {
-                            object result = responseContent;
-
-                            res.IsSuccess = true;
-                            res.Result = (TResponse)result;
-                        }
-                    }
-                    else if (response.StatusCode == HttpStatusCode.BadGateway)
-                    {
-                        res.IsSuccess = false;
-                        res.Problem = new ValidationProblemDetails()
-                        {
-                            Type = ErrorTypes.connection_error,
-                            Status = (int)HttpStatusCode.BadGateway,
-                            Title = $"API Connection Error({address})",
-                            Detail = string.Empty,
-                            Instance = System.Reflection.MethodBase.GetCurrentMethod().ReflectedType.Name
-                        };
-                    }
-                    else if (sendAccessToken && accesstoken == "" && AccessToken != "" && AutoRefreshTokenIfExpired && (response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden || response.StatusCode == HttpStatusCode.MethodNotAllowed))
+                    if (res.IsSuccess == false && res?.Problem?.Type == ErrorTypes.unauthorized && sendAccessToken && accesstoken == "" && AccessToken != "" && AutoRefreshTokenIfExpired)
                     {
                         bool refreshSuccess = await RefreshTokens();
 
@@ -637,53 +339,29 @@ namespace ApiCallManager.NetFramework
                     }
                     else
                     {
-                        string responseContent = await response.Content.ReadAsStringAsync();
-                        var data = JsonConvert.DeserializeObject<ValidationProblemDetails>(responseContent);
-
-                        if (data != null)
-                        {
-                            res.IsSuccess = false;
-                            res.Problem = data;
-                        }
-                        else
-                        {
-                            res.IsSuccess = false;
-                            res.Problem = new ValidationProblemDetails()
-                            {
-                                Type = ErrorTypes.server_error,
-                                Status = (int)response.StatusCode,
-                                Title = $"API Error({address})",
-                                Detail = string.Empty,
-                                Instance = System.Reflection.MethodBase.GetCurrentMethod().ReflectedType.Name
-                            };
-                        }
+                        return res;
                     }
                 }
             }
             catch (Exception ex)
             {
-                res.IsSuccess = false;
-                res.Problem = new ValidationProblemDetails()
+                return new ApiResult<TResponse>()
                 {
-                    Type = ErrorTypes.server_unexpected_error,
-                    Status = (int)HttpStatusCode.InternalServerError,
-                    Title = $"API Manager Error({address})",
-                    Detail = ex.Message,
-                    Instance = System.Reflection.MethodBase.GetCurrentMethod().ReflectedType.Name
+                    IsSuccess = false,
+                    Problem = new ValidationProblemDetails()
+                    {
+                        Type = ErrorTypes.server_unexpected_error,
+                        Status = (int)HttpStatusCode.InternalServerError,
+                        Title = $"API Manager Error({address})",
+                        Detail = ex.Message,
+                        Instance = "ApiManager/DeleteAsync"
+                    }
                 };
             }
-
-            return res;
         }
 
         public async Task<ApiResult> DeleteNoResultAsync(string address, bool sendAccessToken = false, string accesstoken = "", params Tuple<string, string>[] param)
         {
-            ApiResult res = new ApiResult()
-            {
-                IsSuccess = false,
-                Problem = null
-            };
-
             try
             {
                 using (var httpClient = CreateHttpClient())
@@ -695,23 +373,9 @@ namespace ApiCallManager.NetFramework
 
                     var response = await httpClient.DeleteAsync(ApiHostUrl + address + s);
 
-                    if (response.IsSuccessStatusCode)
-                    {
-                        res.IsSuccess = true;
-                    }
-                    else if (response.StatusCode == HttpStatusCode.BadGateway)
-                    {
-                        res.IsSuccess = false;
-                        res.Problem = new ValidationProblemDetails()
-                        {
-                            Type = ErrorTypes.connection_error,
-                            Status = (int)HttpStatusCode.BadGateway,
-                            Title = $"API Connection Error({address})",
-                            Detail = string.Empty,
-                            Instance = System.Reflection.MethodBase.GetCurrentMethod().ReflectedType.Name
-                        };
-                    }
-                    else if (sendAccessToken && accesstoken == "" && AccessToken != "" && AutoRefreshTokenIfExpired && (response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden || response.StatusCode == HttpStatusCode.MethodNotAllowed))
+                    ApiResult res = await CheckResponse(response);
+
+                    if (res.IsSuccess == false && res?.Problem?.Type == ErrorTypes.unauthorized && sendAccessToken && accesstoken == "" && AccessToken != "" && AutoRefreshTokenIfExpired)
                     {
                         bool refreshSuccess = await RefreshTokens();
 
@@ -719,40 +383,203 @@ namespace ApiCallManager.NetFramework
                     }
                     else
                     {
-                        string responseContent = await response.Content.ReadAsStringAsync();
-                        var data = JsonConvert.DeserializeObject<ValidationProblemDetails>(responseContent);
-
-                        if (data != null)
-                        {
-                            res.IsSuccess = false;
-                            res.Problem = data;
-                        }
-                        else
-                        {
-                            res.IsSuccess = false;
-                            res.Problem = new ValidationProblemDetails()
-                            {
-                                Type = ErrorTypes.server_error,
-                                Status = (int)response.StatusCode,
-                                Title = $"API Error({address})",
-                                Detail = string.Empty,
-                                Instance = System.Reflection.MethodBase.GetCurrentMethod().ReflectedType.Name
-                            };
-                        }
+                        return res;
                     }
                 }
             }
             catch (Exception ex)
             {
+                return new ApiResult()
+                {
+                    IsSuccess = false,
+                    Problem = new ValidationProblemDetails()
+                    {
+                        Type = ErrorTypes.server_unexpected_error,
+                        Status = (int)HttpStatusCode.InternalServerError,
+                        Title = $"API Manager Error({address})",
+                        Detail = ex.Message,
+                        Instance = "ApiManager/DeleteNoResultAsync"
+                    }
+                };
+            }
+        }
+
+
+        private static async Task<ApiResult<TResponse>> CheckResponse<TResponse>(HttpResponseMessage response)
+        {
+            ApiResult<TResponse> res = new ApiResult<TResponse>()
+            {
+                IsSuccess = false,
+                Problem = null
+            };
+
+            if (response.IsSuccessStatusCode)
+            {
+                if (typeof(TResponse) == typeof(FileContentResult))
+                {
+                    byte[] tmp = await response.Content.ReadAsByteArrayAsync();
+
+                    object result = new FileContentResult(tmp, response.Content.Headers.ContentType.MediaType);
+
+                    res.IsSuccess = true;
+                    res.Result = (TResponse)result;
+                }
+                else if (typeof(TResponse) != typeof(string))
+                {
+                    string responseContent = await response.Content.ReadAsStringAsync();
+                    var result = JsonConvert.DeserializeObject<TResponse>(responseContent);
+
+                    res.IsSuccess = true;
+                    res.Result = result;
+                }
+                else
+                {
+                    string responseContent = await response.Content.ReadAsStringAsync();
+                    object result = responseContent;
+
+                    res.IsSuccess = true;
+                    res.Result = (TResponse)result;
+                }
+            }
+            else if (response.StatusCode == HttpStatusCode.BadGateway)
+            {
                 res.IsSuccess = false;
                 res.Problem = new ValidationProblemDetails()
                 {
-                    Type = ErrorTypes.server_unexpected_error,
-                    Status = (int)HttpStatusCode.InternalServerError,
-                    Title = $"API Manager Error({address})",
-                    Detail = ex.Message,
-                    Instance = System.Reflection.MethodBase.GetCurrentMethod().ReflectedType.Name
+                    Type = ErrorTypes.connection_error,
+                    Status = (int)HttpStatusCode.BadGateway,
+                    Title = $"API Connection Error({response.RequestMessage?.RequestUri?.ToString() ?? ""})",
+                    Detail = string.Empty,
+                    Instance = "ApiManager"
                 };
+            }
+            else if (response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden || response.StatusCode == HttpStatusCode.MethodNotAllowed)
+            {
+                res.IsSuccess = false;
+                res.Problem = new ValidationProblemDetails()
+                {
+                    Type = ErrorTypes.unauthorized,
+                    Status = (int)response.StatusCode,
+                    Title = $"API Error({response.RequestMessage?.RequestUri?.ToString() ?? ""})",
+                    Detail = string.Empty,
+                    Instance = "ApiManager"
+                };
+            }
+            else
+            {
+                string responseContent = await response.Content.ReadAsStringAsync();
+                try
+                {
+                    var data = JsonConvert.DeserializeObject<ValidationProblemDetails>(responseContent);
+
+                    if (data != null)
+                    {
+                        res.IsSuccess = false;
+                        res.Problem = data;
+                    }
+                    else
+                    {
+                        res.IsSuccess = false;
+                        res.Problem = new ValidationProblemDetails()
+                        {
+                            Type = ErrorTypes.server_error,
+                            Status = (int)response.StatusCode,
+                            Title = $"API Error({response.RequestMessage?.RequestUri?.ToString() ?? ""})",
+                            Detail = string.Empty,
+                            Instance = "ApiManager"
+                        };
+                    }
+                }
+                catch (Exception ex)
+                {
+                    res.IsSuccess = false;
+                    res.Problem = new ValidationProblemDetails()
+                    {
+                        Type = ErrorTypes.server_unexpected_error,
+                        Status = (int)response.StatusCode,
+                        Title = $"API Error({response.RequestMessage?.RequestUri?.ToString() ?? ""})",
+                        Detail = ex.Message,
+                        Instance = "ApiManager"
+                    };
+                }
+            }
+
+            return res;
+        }
+
+        private static async Task<ApiResult> CheckResponse(HttpResponseMessage response)
+        {
+            ApiResult res = new ApiResult()
+            {
+                IsSuccess = false,
+                Problem = null
+            };
+
+            if (response.IsSuccessStatusCode)
+            {
+                res.IsSuccess = true;
+            }
+            else if (response.StatusCode == HttpStatusCode.BadGateway)
+            {
+                res.IsSuccess = false;
+                res.Problem = new ValidationProblemDetails()
+                {
+                    Type = ErrorTypes.connection_error,
+                    Status = (int)HttpStatusCode.BadGateway,
+                    Title = $"API Connection Error({response.RequestMessage?.RequestUri?.ToString() ?? ""})",
+                    Detail = string.Empty,
+                    Instance = "ApiManager"
+                };
+            }
+            else if (response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden || response.StatusCode == HttpStatusCode.MethodNotAllowed)
+            {
+                res.IsSuccess = false;
+                res.Problem = new ValidationProblemDetails()
+                {
+                    Type = ErrorTypes.unauthorized,
+                    Status = (int)response.StatusCode,
+                    Title = $"API Error({response.RequestMessage?.RequestUri?.ToString() ?? ""})",
+                    Detail = string.Empty,
+                    Instance = "ApiManager"
+                };
+            }
+            else
+            {
+                string responseContent = await response.Content.ReadAsStringAsync();
+                try
+                {
+                    var data = JsonConvert.DeserializeObject<ValidationProblemDetails>(responseContent);
+
+                    if (data != null)
+                    {
+                        res.IsSuccess = false;
+                        res.Problem = data;
+                    }
+                    else
+                    {
+                        res.IsSuccess = false;
+                        res.Problem = new ValidationProblemDetails()
+                        {
+                            Type = ErrorTypes.server_error,
+                            Status = (int)response.StatusCode,
+                            Title = $"API Error({response.RequestMessage?.RequestUri?.ToString() ?? ""})",
+                            Detail = string.Empty,
+                            Instance = "ApiManager"
+                        };
+                    }
+                }
+                catch (Exception ex)
+                {
+                    res.IsSuccess = false;
+                    res.Problem = new ValidationProblemDetails()
+                    {
+                        Type = ErrorTypes.server_unexpected_error,
+                        Status = (int)response.StatusCode,
+                        Title = $"API Error({response.RequestMessage?.RequestUri?.ToString() ?? ""})",
+                        Detail = ex.Message,
+                        Instance = "ApiManager"
+                    };
+                }
             }
 
             return res;
@@ -795,6 +622,5 @@ namespace ApiCallManager.NetFramework
                 return false;
             }
         }
-
     }
 }

@@ -35,4 +35,11 @@
         /// </summary>
         public const string connection_error = "connection_error";
     }
+
+    public enum AuthorizationType
+    {
+        None = 0,
+        Bearer = 1,
+        Basic = 2
+    }
 }

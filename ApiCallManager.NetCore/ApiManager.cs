@@ -11,6 +11,11 @@ namespace ApiCallManager
         private readonly string ApiHostUrl;
         private readonly IHttpClientFactory? HttpClientFactory;
 
+        public AuthorizationType AuthorizationType { get; set; }
+
+        public string UserName = "";
+        private string Password = "";
+
         public string AccessToken = "";
         private string RefreshToken = "";
         private string RefreshUrl = "";
@@ -20,6 +25,7 @@ namespace ApiCallManager
         {
             ApiHostUrl = apiHostUrl;
             HttpClientFactory = httpClientFactory;
+            AuthorizationType = AuthorizationType.None;
         }
 
 
@@ -38,14 +44,24 @@ namespace ApiCallManager
             return jwtSecurityToken.ValidTo > DateTime.UtcNow;
         }
 
-        private void AddAuthorizationHeader(HttpClient request, bool sendAccessToken, string token)
+        private void AddAuthorizationHeader(HttpClient request, bool sendAuthorizationHeader, string token)
         {
-            if (sendAccessToken)
+            if (sendAuthorizationHeader)
             {
                 if (!string.IsNullOrWhiteSpace(token))
-                    request.DefaultRequestHeaders.Add("Authorization", "Bearer " + token);
+                {
+                    if (AuthorizationType == AuthorizationType.Basic)
+                        request.DefaultRequestHeaders.Add("Authorization", "Basic " + token);
+                    else
+                        request.DefaultRequestHeaders.Add("Authorization", "Bearer " + token);
+                }
                 else
-                    request.DefaultRequestHeaders.Add("Authorization", "Bearer " + AccessToken);
+                {
+                    if (AuthorizationType == AuthorizationType.Basic)
+                        request.DefaultRequestHeaders.Add("Authorization", "Basic " + Convert.ToBase64String(Encoding.ASCII.GetBytes($"{UserName}:{Password}")));
+                    else
+                        request.DefaultRequestHeaders.Add("Authorization", "Bearer " + AccessToken);
+                }
             }
         }
 
@@ -56,12 +72,12 @@ namespace ApiCallManager
         }
 
 
-        public async Task<ApiResult<TResponse>> GetAsync<TResponse>(string address, bool sendAccessToken = false, string accesstoken = "", params Tuple<string, string>[] param)
+        public async Task<ApiResult<TResponse>> GetAsync<TResponse>(string address, bool sendAuthorizationHeader = false, string accesstoken = "", params Tuple<string, string>[] param)
         {
             try
             {
                 using var httpClient = CreateHttpClient();
-                AddAuthorizationHeader(httpClient, sendAccessToken, accesstoken);
+                AddAuthorizationHeader(httpClient, sendAuthorizationHeader, accesstoken);
 
                 string s = "";
                 if (param.Length > 0) s = "?" + string.Join("&", param.Select(x => x.Item1 + "=" + x.Item2));
@@ -69,7 +85,7 @@ namespace ApiCallManager
                 var response = await httpClient.GetAsync(ApiHostUrl + address + s);
                 ApiResult<TResponse> res = await CheckResponse<TResponse>(response);
 
-                if (res.IsSuccess == false && res?.Problem?.Type == ErrorTypes.unauthorized && sendAccessToken && accesstoken == "" && AccessToken != "" && AutoRefreshTokenIfExpired)
+                if (res.IsSuccess == false && res?.Problem?.Type == ErrorTypes.unauthorized && sendAuthorizationHeader && accesstoken == "" && AccessToken != "" && AutoRefreshTokenIfExpired)
                 {
                     bool refreshSuccess = await RefreshTokens();
 
@@ -98,12 +114,12 @@ namespace ApiCallManager
         }
 
 
-        public async Task<ApiResult<TResponse>> PostAsync<TRequest, TResponse>(string address, TRequest input, bool sendAccessToken = false, string accesstoken = "")
+        public async Task<ApiResult<TResponse>> PostAsync<TRequest, TResponse>(string address, TRequest input, bool sendAuthorizationHeader = false, string accesstoken = "")
         {
             try
             {
                 using var httpClient = CreateHttpClient();
-                AddAuthorizationHeader(httpClient, sendAccessToken, accesstoken);
+                AddAuthorizationHeader(httpClient, sendAuthorizationHeader, accesstoken);
 
                 HttpResponseMessage response;
 
@@ -119,7 +135,7 @@ namespace ApiCallManager
 
                 ApiResult<TResponse> res = await CheckResponse<TResponse>(response);
 
-                if (res.IsSuccess == false && res?.Problem?.Type == ErrorTypes.unauthorized && sendAccessToken && accesstoken == "" && AccessToken != "" && AutoRefreshTokenIfExpired)
+                if (res.IsSuccess == false && res?.Problem?.Type == ErrorTypes.unauthorized && sendAuthorizationHeader && accesstoken == "" && AccessToken != "" && AutoRefreshTokenIfExpired)
                 {
                     bool refreshSuccess = await RefreshTokens();
 
@@ -147,12 +163,12 @@ namespace ApiCallManager
             }
         }
 
-        public async Task<ApiResult> PostNoResultAsync<TRequest>(string address, TRequest input, bool sendAccessToken = false, string accesstoken = "")
+        public async Task<ApiResult> PostNoResultAsync<TRequest>(string address, TRequest input, bool sendAuthorizationHeader = false, string accesstoken = "")
         {
             try
             {
                 using var httpClient = CreateHttpClient();
-                AddAuthorizationHeader(httpClient, sendAccessToken, accesstoken);
+                AddAuthorizationHeader(httpClient, sendAuthorizationHeader, accesstoken);
 
                 HttpResponseMessage response;
 
@@ -168,7 +184,7 @@ namespace ApiCallManager
 
                 ApiResult res = await CheckResponse(response);
 
-                if (res.IsSuccess == false && res?.Problem?.Type == ErrorTypes.unauthorized && sendAccessToken && accesstoken == "" && AccessToken != "" && AutoRefreshTokenIfExpired)
+                if (res.IsSuccess == false && res?.Problem?.Type == ErrorTypes.unauthorized && sendAuthorizationHeader && accesstoken == "" && AccessToken != "" && AutoRefreshTokenIfExpired)
                 {
                     bool refreshSuccess = await RefreshTokens();
 
@@ -197,12 +213,12 @@ namespace ApiCallManager
         }
 
 
-        public async Task<ApiResult<TResponse>> PutAsync<TRequest, TResponse>(string address, TRequest input, bool sendAccessToken = false, string accesstoken = "")
+        public async Task<ApiResult<TResponse>> PutAsync<TRequest, TResponse>(string address, TRequest input, bool sendAuthorizationHeader = false, string accesstoken = "")
         {
             try
             {
                 using var httpClient = CreateHttpClient();
-                AddAuthorizationHeader(httpClient, sendAccessToken, accesstoken);
+                AddAuthorizationHeader(httpClient, sendAuthorizationHeader, accesstoken);
 
                 HttpResponseMessage response;
 
@@ -218,7 +234,7 @@ namespace ApiCallManager
 
                 ApiResult<TResponse> res = await CheckResponse<TResponse>(response);
 
-                if (res.IsSuccess == false && res?.Problem?.Type == ErrorTypes.unauthorized && sendAccessToken && accesstoken == "" && AccessToken != "" && AutoRefreshTokenIfExpired)
+                if (res.IsSuccess == false && res?.Problem?.Type == ErrorTypes.unauthorized && sendAuthorizationHeader && accesstoken == "" && AccessToken != "" && AutoRefreshTokenIfExpired)
                 {
                     bool refreshSuccess = await RefreshTokens();
 
@@ -246,12 +262,12 @@ namespace ApiCallManager
             }
         }
 
-        public async Task<ApiResult> PutNoResultAsync<TRequest>(string address, TRequest input, bool sendAccessToken = false, string accesstoken = "")
+        public async Task<ApiResult> PutNoResultAsync<TRequest>(string address, TRequest input, bool sendAuthorizationHeader = false, string accesstoken = "")
         {
             try
             {
                 using var httpClient = CreateHttpClient();
-                AddAuthorizationHeader(httpClient, sendAccessToken, accesstoken);
+                AddAuthorizationHeader(httpClient, sendAuthorizationHeader, accesstoken);
 
                 HttpResponseMessage response;
 
@@ -267,7 +283,7 @@ namespace ApiCallManager
 
                 ApiResult res = await CheckResponse(response);
 
-                if (res.IsSuccess == false && res?.Problem?.Type == ErrorTypes.unauthorized && sendAccessToken && accesstoken == "" && AccessToken != "" && AutoRefreshTokenIfExpired)
+                if (res.IsSuccess == false && res?.Problem?.Type == ErrorTypes.unauthorized && sendAuthorizationHeader && accesstoken == "" && AccessToken != "" && AutoRefreshTokenIfExpired)
                 {
                     bool refreshSuccess = await RefreshTokens();
 
@@ -296,12 +312,12 @@ namespace ApiCallManager
         }
 
 
-        public async Task<ApiResult<TResponse>> DeleteAsync<TResponse>(string address, bool sendAccessToken = false, string accesstoken = "", params Tuple<string, string>[] param)
+        public async Task<ApiResult<TResponse>> DeleteAsync<TResponse>(string address, bool sendAuthorizationHeader = false, string accesstoken = "", params Tuple<string, string>[] param)
         {
             try
             {
                 using var httpClient = CreateHttpClient();
-                AddAuthorizationHeader(httpClient, sendAccessToken, accesstoken);
+                AddAuthorizationHeader(httpClient, sendAuthorizationHeader, accesstoken);
 
                 string s = "";
                 if (param.Length > 0) s = "?" + string.Join("&", param.Select(x => x.Item1 + "=" + x.Item2));
@@ -310,7 +326,7 @@ namespace ApiCallManager
 
                 ApiResult<TResponse> res = await CheckResponse<TResponse>(response);
 
-                if (res.IsSuccess == false && res?.Problem?.Type == ErrorTypes.unauthorized && sendAccessToken && accesstoken == "" && AccessToken != "" && AutoRefreshTokenIfExpired)
+                if (res.IsSuccess == false && res?.Problem?.Type == ErrorTypes.unauthorized && sendAuthorizationHeader && accesstoken == "" && AccessToken != "" && AutoRefreshTokenIfExpired)
                 {
                     bool refreshSuccess = await RefreshTokens();
 
@@ -338,12 +354,12 @@ namespace ApiCallManager
             }
         }
 
-        public async Task<ApiResult> DeleteNoResultAsync(string address, bool sendAccessToken = false, string accesstoken = "", params Tuple<string, string>[] param)
+        public async Task<ApiResult> DeleteNoResultAsync(string address, bool sendAuthorizationHeader = false, string accesstoken = "", params Tuple<string, string>[] param)
         {
             try
             {
                 using var httpClient = CreateHttpClient();
-                AddAuthorizationHeader(httpClient, sendAccessToken, accesstoken);
+                AddAuthorizationHeader(httpClient, sendAuthorizationHeader, accesstoken);
 
                 string s = "";
                 if (param.Length > 0) s = "?" + string.Join("&", param.Select(x => x.Item1 + "=" + x.Item2));
@@ -352,7 +368,7 @@ namespace ApiCallManager
 
                 ApiResult res = await CheckResponse(response);
 
-                if (res.IsSuccess == false && res?.Problem?.Type == ErrorTypes.unauthorized && sendAccessToken && accesstoken == "" && AccessToken != "" && AutoRefreshTokenIfExpired)
+                if (res.IsSuccess == false && res?.Problem?.Type == ErrorTypes.unauthorized && sendAuthorizationHeader && accesstoken == "" && AccessToken != "" && AutoRefreshTokenIfExpired)
                 {
                     bool refreshSuccess = await RefreshTokens();
 
@@ -567,6 +583,14 @@ namespace ApiCallManager
             RefreshToken = refreshToken;
             RefreshUrl = refreshUrl;
             AutoRefreshTokenIfExpired = autoRefreshTokenIfExpired;
+            AuthorizationType = AuthorizationType.Bearer;
+        }
+
+        public void SetBasicCredential(string username, string password)
+        {
+            UserName = username;
+            Password = password;
+            AuthorizationType = AuthorizationType.Basic;
         }
 
         public async Task<bool> RefreshTokens()

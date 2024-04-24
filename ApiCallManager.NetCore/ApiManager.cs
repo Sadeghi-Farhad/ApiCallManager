@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Text;
@@ -11,6 +12,8 @@ namespace ApiCallManager
         private readonly string ApiHostUrl;
         private readonly IHttpClientFactory? HttpClientFactory;
 
+        private int RequestTimeOut = 100000;
+
         public AuthorizationType AuthorizationType { get; set; }
 
         public string UserName = "";
@@ -20,6 +23,8 @@ namespace ApiCallManager
         private string RefreshToken = "";
         private string RefreshUrl = "";
         private bool AutoRefreshTokenIfExpired = false;
+
+        private Action<string, string>? OnRefreshToken;
 
         public ApiManager(string apiHostUrl = "", IHttpClientFactory? httpClientFactory = null)
         {
@@ -46,6 +51,8 @@ namespace ApiCallManager
 
         private void AddAuthorizationHeader(HttpClient request, bool sendAuthorizationHeader, string token)
         {
+            request.Timeout = TimeSpan.FromMilliseconds(RequestTimeOut);
+
             if (sendAuthorizationHeader)
             {
                 if (!string.IsNullOrWhiteSpace(token))
@@ -577,13 +584,15 @@ namespace ApiCallManager
             return res;
         }
 
-        public void SetTokens(string accessToken, string refreshToken, string refreshUrl, bool autoRefreshTokenIfExpired)
+        public void SetTokens(string accessToken, string refreshToken, string refreshUrl, bool autoRefreshTokenIfExpired, Action<string, string>? onRefreshToken = null)
         {
             AccessToken = accessToken;
             RefreshToken = refreshToken;
             RefreshUrl = refreshUrl;
             AutoRefreshTokenIfExpired = autoRefreshTokenIfExpired;
             AuthorizationType = AuthorizationType.Bearer;
+
+            OnRefreshToken = onRefreshToken;
         }
 
         public void SetBasicCredential(string username, string password)
@@ -604,11 +613,14 @@ namespace ApiCallManager
                 };
 
                 var res = await PostAsync<RefreshTokenDTO, AuthResultDTO>(RefreshUrl, data);
-
                 if (res.IsSuccess)
                 {
                     this.AccessToken = res.Result.AccessToken;
                     this.RefreshToken = res.Result.RefreshToken;
+
+                    if (OnRefreshToken != null)
+                        OnRefreshToken.Invoke(AccessToken, RefreshToken);
+
                     return true;
                 }
                 else
@@ -620,6 +632,15 @@ namespace ApiCallManager
             {
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Set HttpClient Timeout
+        /// </summary>
+        /// <param name="timeout">millisecond</param>
+        public void SetTimeOut(int timeout)
+        {
+            RequestTimeOut = timeout;
         }
     }
 }

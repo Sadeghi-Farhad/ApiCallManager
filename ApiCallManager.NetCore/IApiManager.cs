@@ -86,9 +86,10 @@
         /// <returns>API response object in <typeparamref name="TResponse"/> type.</returns>
         Task<ApiResult> DeleteNoResultAsync(string address, bool sendAuthorizationHeader = false, string accesstoken = "", params Tuple<string, string>[] param);
 
-        void SetTokens(string accessToken, string refreshToken, string refreshUrl, bool autoRefreshTokenIfExpired);
+        void SetTokens(string accessToken, string refreshToken, string refreshUrl, bool autoRefreshTokenIfExpired, Action<string, string>? onRefreshToken = null);
         void SetBasicCredential(string username, string password);
 
         Task<bool> RefreshTokens();
+        void SetTimeOut(int timeout);
     }
 }

@@ -1,11 +1,10 @@
-﻿using ApiCallManager;
-using ApiCallManagerTest.DTO;
+﻿using ApiCallManager.Tests.DTO;
 using System.Diagnostics;
 
-namespace ApiCallManagerTest
+namespace ApiCallManager.Tests
 {
     [TestClass]
-    public class UnitTest2_AutoTokenRefresh
+    public class ApiManagerTests2
     {
         private string AccessToken = string.Empty;
         private string RefreshToken = string.Empty;

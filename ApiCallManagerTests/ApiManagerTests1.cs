@@ -1,10 +1,9 @@
-using ApiCallManager;
-using ApiCallManagerTest.DTO;
+using ApiCallManager.Tests.DTO;
 
-namespace ApiCallManagerTest
+namespace ApiCallManager.Tests
 {
     [TestClass]
-    public class UnitTest1_Base
+    public class ApiManagerTests1
     {
         private ApiManager Create()
         {

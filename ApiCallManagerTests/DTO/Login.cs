@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
-
-namespace ApiCallManagerTest.DTO
+﻿namespace ApiCallManager.Tests.DTO
 {
     public class LoginReq
     {

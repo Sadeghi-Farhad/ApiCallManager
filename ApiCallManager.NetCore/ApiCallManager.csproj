@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <Title>ApiCallManager</Title>
-    <Version>8.0.0</Version>
+    <Version>8.1.0</Version>
     <Authors>Sadeghi-Farhad</Authors>
     <Description>REST API call manager.</Description>
     <PackageTags>ApiCall; CallApi; ApiManager; ApiCallManager;</PackageTags>

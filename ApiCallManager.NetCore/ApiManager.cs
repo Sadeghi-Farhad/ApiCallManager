@@ -25,6 +25,7 @@ namespace ApiCallManager
 
         private Action<string, string>? OnRefreshToken;
         private Func<string>? AccessTokenProvider;
+        private Func<Task<string>>? AccessTokenProviderAsync;
 
         public ApiManager(string apiHostUrl = "", IHttpClientFactory? httpClientFactory = null)
         {
@@ -49,7 +50,7 @@ namespace ApiCallManager
             return jwtSecurityToken.ValidTo > DateTime.UtcNow;
         }
 
-        private void AddAuthorizationHeader(HttpClient request, bool sendAuthorizationHeader, string token)
+        private async void AddAuthorizationHeader(HttpClient request, bool sendAuthorizationHeader, string token)
         {
             request.Timeout = TimeSpan.FromMilliseconds(RequestTimeOut);
 
@@ -68,10 +69,12 @@ namespace ApiCallManager
                         request.DefaultRequestHeaders.Add("Authorization", "Basic " + Convert.ToBase64String(Encoding.ASCII.GetBytes($"{UserName}:{Password}")));
                     else
                     {
-                        if (AccessTokenProvider == null)
-                            request.DefaultRequestHeaders.Add("Authorization", "Bearer " + AccessToken);
-                        else
+                        if (AccessTokenProviderAsync != null)
+                            request.DefaultRequestHeaders.Add("Authorization", "Bearer " + await AccessTokenProviderAsync.Invoke());
+                        else if (AccessTokenProvider != null)
                             request.DefaultRequestHeaders.Add("Authorization", "Bearer " + AccessTokenProvider.Invoke());
+                        else
+                            request.DefaultRequestHeaders.Add("Authorization", "Bearer " + AccessToken);
                     }
                 }
             }
@@ -602,8 +605,20 @@ namespace ApiCallManager
 
         public void SetTokenProvider(Func<string> accessTokenProvider)
         {
+            AutoRefreshTokenIfExpired = false;
             AuthorizationType = AuthorizationType.Bearer;
+
             AccessTokenProvider = accessTokenProvider;
+            AccessTokenProviderAsync = null;
+        }
+
+        public void SetTokenProvider(Func<Task<string>> accessTokenProviderAsync)
+        {
+            AutoRefreshTokenIfExpired = false;
+            AuthorizationType = AuthorizationType.Bearer;
+
+            AccessTokenProviderAsync = accessTokenProviderAsync;
+            AccessTokenProvider = null;
         }
 
         public void SetBasicCredential(string username, string password)

@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Text;
@@ -25,6 +24,7 @@ namespace ApiCallManager
         private bool AutoRefreshTokenIfExpired = false;
 
         private Action<string, string>? OnRefreshToken;
+        private Func<string>? AccessTokenProvider;
 
         public ApiManager(string apiHostUrl = "", IHttpClientFactory? httpClientFactory = null)
         {
@@ -67,7 +67,12 @@ namespace ApiCallManager
                     if (AuthorizationType == AuthorizationType.Basic)
                         request.DefaultRequestHeaders.Add("Authorization", "Basic " + Convert.ToBase64String(Encoding.ASCII.GetBytes($"{UserName}:{Password}")));
                     else
-                        request.DefaultRequestHeaders.Add("Authorization", "Bearer " + AccessToken);
+                    {
+                        if (AccessTokenProvider == null)
+                            request.DefaultRequestHeaders.Add("Authorization", "Bearer " + AccessToken);
+                        else
+                            request.DefaultRequestHeaders.Add("Authorization", "Bearer " + AccessTokenProvider.Invoke());
+                    }
                 }
             }
         }
@@ -593,6 +598,12 @@ namespace ApiCallManager
             AuthorizationType = AuthorizationType.Bearer;
 
             OnRefreshToken = onRefreshToken;
+        }
+
+        public void SetTokenProvider(Func<string> accessTokenProvider)
+        {
+            AuthorizationType = AuthorizationType.Bearer;
+            AccessTokenProvider = accessTokenProvider;
         }
 
         public void SetBasicCredential(string username, string password)

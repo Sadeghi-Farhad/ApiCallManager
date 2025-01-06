@@ -87,6 +87,7 @@
         Task<ApiResult> DeleteNoResultAsync(string address, bool sendAuthorizationHeader = false, string accesstoken = "", params Tuple<string, string>[] param);
 
         void SetTokens(string accessToken, string refreshToken, string refreshUrl, bool autoRefreshTokenIfExpired, Action<string, string>? onRefreshToken = null);
+        void SetTokenProvider(Func<string> accessTokenProvider);
         void SetBasicCredential(string username, string password);
 
         Task<bool> RefreshTokens();

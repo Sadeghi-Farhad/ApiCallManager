@@ -1,11 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <Title>ApiCallManager</Title>
-    <Version>6.1.2</Version>
+    <Version>8.0.0</Version>
     <Authors>Sadeghi-Farhad</Authors>
     <Description>REST API call manager.</Description>
     <PackageTags>ApiCall; CallApi; ApiManager; ApiCallManager;</PackageTags>
@@ -13,7 +13,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.1.38" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="6.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.30.0" />
   </ItemGroup>

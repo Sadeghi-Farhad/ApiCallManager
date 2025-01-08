@@ -50,7 +50,7 @@ namespace ApiCallManager
             return jwtSecurityToken.ValidTo > DateTime.UtcNow;
         }
 
-        private async void AddAuthorizationHeader(HttpClient request, bool sendAuthorizationHeader, string token)
+        private async Task AddAuthorizationHeader(HttpClient request, bool sendAuthorizationHeader, string token)
         {
             request.Timeout = TimeSpan.FromMilliseconds(RequestTimeOut);
 
@@ -92,7 +92,7 @@ namespace ApiCallManager
             try
             {
                 using var httpClient = CreateHttpClient();
-                AddAuthorizationHeader(httpClient, sendAuthorizationHeader, accesstoken);
+                await AddAuthorizationHeader(httpClient, sendAuthorizationHeader, accesstoken);
 
                 string s = "";
                 if (param.Length > 0) s = "?" + string.Join("&", param.Select(x => x.Item1 + "=" + x.Item2));
@@ -134,7 +134,7 @@ namespace ApiCallManager
             try
             {
                 using var httpClient = CreateHttpClient();
-                AddAuthorizationHeader(httpClient, sendAuthorizationHeader, accesstoken);
+                await AddAuthorizationHeader(httpClient, sendAuthorizationHeader, accesstoken);
 
                 HttpResponseMessage response;
 
@@ -183,7 +183,7 @@ namespace ApiCallManager
             try
             {
                 using var httpClient = CreateHttpClient();
-                AddAuthorizationHeader(httpClient, sendAuthorizationHeader, accesstoken);
+                await AddAuthorizationHeader(httpClient, sendAuthorizationHeader, accesstoken);
 
                 HttpResponseMessage response;
 
@@ -233,7 +233,7 @@ namespace ApiCallManager
             try
             {
                 using var httpClient = CreateHttpClient();
-                AddAuthorizationHeader(httpClient, sendAuthorizationHeader, accesstoken);
+                await AddAuthorizationHeader(httpClient, sendAuthorizationHeader, accesstoken);
 
                 HttpResponseMessage response;
 
@@ -282,7 +282,7 @@ namespace ApiCallManager
             try
             {
                 using var httpClient = CreateHttpClient();
-                AddAuthorizationHeader(httpClient, sendAuthorizationHeader, accesstoken);
+                await AddAuthorizationHeader(httpClient, sendAuthorizationHeader, accesstoken);
 
                 HttpResponseMessage response;
 
@@ -332,7 +332,7 @@ namespace ApiCallManager
             try
             {
                 using var httpClient = CreateHttpClient();
-                AddAuthorizationHeader(httpClient, sendAuthorizationHeader, accesstoken);
+                await AddAuthorizationHeader(httpClient, sendAuthorizationHeader, accesstoken);
 
                 string s = "";
                 if (param.Length > 0) s = "?" + string.Join("&", param.Select(x => x.Item1 + "=" + x.Item2));
@@ -374,7 +374,7 @@ namespace ApiCallManager
             try
             {
                 using var httpClient = CreateHttpClient();
-                AddAuthorizationHeader(httpClient, sendAuthorizationHeader, accesstoken);
+                await AddAuthorizationHeader(httpClient, sendAuthorizationHeader, accesstoken);
 
                 string s = "";
                 if (param.Length > 0) s = "?" + string.Join("&", param.Select(x => x.Item1 + "=" + x.Item2));

@@ -31,7 +31,7 @@ namespace ApiCallManager
         {
             ApiHostUrl = apiHostUrl;
             HttpClientFactory = httpClientFactory;
-            AuthorizationType = AuthorizationType.None;
+            AuthorizationType = AuthorizationType.Bearer;
         }
 
 
@@ -59,15 +59,27 @@ namespace ApiCallManager
                 if (!string.IsNullOrWhiteSpace(token))
                 {
                     if (AuthorizationType == AuthorizationType.Basic)
-                        request.DefaultRequestHeaders.Add("Authorization", "Basic " + token);
+                    {
+                        if (token.StartsWith("Basic ") || token.StartsWith("basic "))
+                            request.DefaultRequestHeaders.Add("Authorization", token);
+                        else
+                            request.DefaultRequestHeaders.Add("Authorization", "Basic " + token);
+                    }
+                    else if (AuthorizationType == AuthorizationType.Bearer)
+                    {
+                        if (token.StartsWith("Bearer ") || token.StartsWith("bearer "))
+                            request.DefaultRequestHeaders.Add("Authorization", token);
+                        else
+                            request.DefaultRequestHeaders.Add("Authorization", "Bearer " + token);
+                    }
                     else
-                        request.DefaultRequestHeaders.Add("Authorization", "Bearer " + token);
+                        request.DefaultRequestHeaders.Add("Authorization", token);
                 }
                 else
                 {
                     if (AuthorizationType == AuthorizationType.Basic)
                         request.DefaultRequestHeaders.Add("Authorization", "Basic " + Convert.ToBase64String(Encoding.ASCII.GetBytes($"{UserName}:{Password}")));
-                    else
+                    else if (AuthorizationType == AuthorizationType.Bearer)
                     {
                         if (AccessTokenProviderAsync != null)
                             request.DefaultRequestHeaders.Add("Authorization", "Bearer " + await AccessTokenProviderAsync.Invoke());
@@ -76,6 +88,8 @@ namespace ApiCallManager
                         else
                             request.DefaultRequestHeaders.Add("Authorization", "Bearer " + AccessToken);
                     }
+                    else
+                        request.DefaultRequestHeaders.Add("Authorization", AccessToken);
                 }
             }
         }
@@ -321,6 +335,105 @@ namespace ApiCallManager
                         Title = $"API Manager Error({address})",
                         Detail = ex.Message,
                         Instance = "ApiManager/PutNoResultAsync"
+                    }
+                };
+            }
+        }
+
+
+        public async Task<ApiResult<TResponse>> PatchAsync<TRequest, TResponse>(string address, TRequest input, bool sendAuthorizationHeader = false, string accesstoken = "")
+        {
+            try
+            {
+                using var httpClient = CreateHttpClient();
+                await AddAuthorizationHeader(httpClient, sendAuthorizationHeader, accesstoken);
+
+                HttpResponseMessage response;
+
+                if (input?.GetType() == typeof(MultipartFormDataContent))
+                {
+                    response = await httpClient.PatchAsync(ApiHostUrl + address, input as MultipartFormDataContent);
+                }
+                else
+                {
+                    StringContent content = new StringContent(JsonConvert.SerializeObject(input), Encoding.UTF8, "application/json");
+                    response = await httpClient.PatchAsync(ApiHostUrl + address, content);
+                }
+
+                ApiResult<TResponse> res = await CheckResponse<TResponse>(response);
+
+                if (res.IsSuccess == false && res?.Problem?.Type == ErrorTypes.unauthorized && sendAuthorizationHeader && accesstoken == "" && AccessToken != "" && AutoRefreshTokenIfExpired)
+                {
+                    bool refreshSuccess = await RefreshTokens();
+
+                    return await PatchAsync<TRequest, TResponse>(address, input, true, AccessToken);
+                }
+                else
+                {
+                    return res;
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ApiResult<TResponse>()
+                {
+                    IsSuccess = false,
+                    Problem = new ValidationProblemDetails()
+                    {
+                        Type = ErrorTypes.server_unexpected_error,
+                        Status = (int)HttpStatusCode.InternalServerError,
+                        Title = $"API Manager Error({address})",
+                        Detail = ex.Message,
+                        Instance = "ApiManager/PatchAsync"
+                    }
+                };
+            }
+        }
+
+        public async Task<ApiResult> PatchNoResultAsync<TRequest>(string address, TRequest input, bool sendAuthorizationHeader = false, string accesstoken = "")
+        {
+            try
+            {
+                using var httpClient = CreateHttpClient();
+                await AddAuthorizationHeader(httpClient, sendAuthorizationHeader, accesstoken);
+
+                HttpResponseMessage response;
+
+                if (input?.GetType() == typeof(MultipartFormDataContent))
+                {
+                    response = await httpClient.PatchAsync(ApiHostUrl + address, input as MultipartFormDataContent);
+                }
+                else
+                {
+                    StringContent content = new StringContent(JsonConvert.SerializeObject(input), Encoding.UTF8, "application/json");
+                    response = await httpClient.PatchAsync(ApiHostUrl + address, content);
+                }
+
+                ApiResult res = await CheckResponse(response);
+
+                if (res.IsSuccess == false && res?.Problem?.Type == ErrorTypes.unauthorized && sendAuthorizationHeader && accesstoken == "" && AccessToken != "" && AutoRefreshTokenIfExpired)
+                {
+                    bool refreshSuccess = await RefreshTokens();
+
+                    return await PatchNoResultAsync<TRequest>(address, input, true, AccessToken);
+                }
+                else
+                {
+                    return res;
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ApiResult()
+                {
+                    IsSuccess = false,
+                    Problem = new ValidationProblemDetails()
+                    {
+                        Type = ErrorTypes.server_unexpected_error,
+                        Status = (int)HttpStatusCode.InternalServerError,
+                        Title = $"API Manager Error({address})",
+                        Detail = ex.Message,
+                        Instance = "ApiManager/PatchNoResultAsync"
                     }
                 };
             }
@@ -626,6 +739,12 @@ namespace ApiCallManager
             UserName = username;
             Password = password;
             AuthorizationType = AuthorizationType.Basic;
+        }
+
+        public void SetCustomAuthorizationHeader(string token)
+        {
+            AccessToken = token;
+            AuthorizationType = AuthorizationType.Custom;
         }
 
         public async Task<bool> RefreshTokens()

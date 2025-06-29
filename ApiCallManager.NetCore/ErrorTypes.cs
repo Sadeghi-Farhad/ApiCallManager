@@ -40,6 +40,7 @@
     {
         None = 0,
         Bearer = 1,
-        Basic = 2
+        Basic = 2,
+        Custom = 3
     }
 }
